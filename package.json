@@ -11,10 +11,15 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "file-type": "^16.5.4",
+    "fs-extra": "^11.3.6",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.7.3"
+    "mongoose": "^9.7.3",
+    "multer": "^2.2.0",
+    "uuid": "^14.0.1"
   }
 }
