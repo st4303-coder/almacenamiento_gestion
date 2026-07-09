@@ -5,14 +5,13 @@ const fs = require('fs-extra');
 const path = require('path');
 const UserDocument = require('../models/userDocument');
 
-// --- CONFIGURACIÓN DE MULTER (En Memoria para validar antes de guardar) ---
+
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 2 * 1024 * 1024 } // CONTROL DE SEGURIDAD: Máximo 2MB
+    limits: { fileSize: 2 * 1024 * 1024 } 
 }).single('documento'); 
 
-// --- 1. [CREATE] Subir y Validar Documento ---
 exports.uploadDocumento = (req, res) => {
     upload(req, res, async (err) => {
         if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
@@ -26,7 +25,6 @@ exports.uploadDocumento = (req, res) => {
         }
 
         try {
-            // Recibimos userId y documentType directamente desde el req.body (FormData)
             const { userId, documentType } = req.body;
             
             if (!userId) {
@@ -38,7 +36,6 @@ exports.uploadDocumento = (req, res) => {
                 return res.status(400).json({ msg: "Tipo de documento no válido" });
             }
 
-            // CONTROL DE SEGURIDAD OBLIGATORIO: Validar Tipo MIME Real (Magic Numbers)
             const fileInfo = await fileType.fromBuffer(req.file.buffer);
             const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
             const mimesPermitidos = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -47,7 +44,6 @@ exports.uploadDocumento = (req, res) => {
                 return res.status(400).json({ msg: "Archivo malicioso o extensión no permitida (.jpg, .png, .pdf)" });
             }
 
-            // CONTROL DE SEGURIDAD OBLIGATORIO: Almacenamiento Aislado con Renombrado
             const nombreSeguro = `${uuidv4()}.${fileInfo.ext}`;
             const rutaDirectorioSeguro = path.join(__dirname, '../../storage_aislado'); 
             const rutaCompletaArchivo = path.join(rutaDirectorioSeguro, nombreSeguro);
@@ -55,7 +51,7 @@ exports.uploadDocumento = (req, res) => {
             await fs.ensureDir(rutaDirectorioSeguro);
             await fs.writeFile(rutaCompletaArchivo, req.file.buffer);
 
-            // Guardar registro en MongoDB usando el userId recibido del body
+      
             const nuevoDocumento = new UserDocument({
                 userId, 
                 documentType,
@@ -72,10 +68,10 @@ exports.uploadDocumento = (req, res) => {
     });
 };
 
-// --- 2. [READ] Obtener todos los documentos de un usuario en específico ---
+
 exports.getDocumentosPorUsuario = async (req, res) => {
     try {
-        const { userId } = req.params; // Lo buscamos mediante la URL /api/expedientes/usuario/:userId
+        const { userId } = req.params; 
         const documentos = await UserDocument.find({ userId });
         res.json(documentos);
     } catch (error) {
@@ -83,13 +79,12 @@ exports.getDocumentosPorUsuario = async (req, res) => {
     }
 };
 
-// --- 3. [UPDATE] Reemplazar/Actualizar un archivo existente ---
 exports.updateDocumento = (req, res) => {
     upload(req, res, async (err) => {
         if (err) return res.status(400).json({ msg: "Error de archivo" });
 
         try {
-            const { id } = req.params; // ID del documento a modificar
+            const { id } = req.params; 
             
             const documentoExistente = await UserDocument.findById(id);
             if (!documentoExistente) {
@@ -105,17 +100,14 @@ exports.updateDocumento = (req, res) => {
                 return res.status(400).json({ msg: "Archivo inválido" });
             }
 
-            // Borrar archivo viejo del disco
             if (await fs.pathExists(documentoExistente.fileUrl)) {
                 await fs.unlink(documentoExistente.fileUrl);
             }
 
-            // Guardar nuevo archivo aislado
             const nuevoNombre = `${uuidv4()}.${fileInfo.ext}`;
             const nuevaRuta = path.join(__dirname, '../../storage_aislado', nuevoNombre);
             await fs.writeFile(nuevaRuta, req.file.buffer);
 
-            // Actualizar datos
             documentoExistente.fileUrl = nuevaRuta;
             documentoExistente.mimeType = fileInfo.mime;
             documentoExistente.status = 'pending'; 
@@ -129,7 +121,6 @@ exports.updateDocumento = (req, res) => {
     });
 };
 
-// --- 4. [DELETE] Eliminar documento del disco y la base de datos ---
 exports.deleteDocumento = async (req, res) => {
     try {
         const { id } = req.params;
@@ -139,12 +130,10 @@ exports.deleteDocumento = async (req, res) => {
             return res.status(404).json({ msg: "Documento no encontrado" });
         }
 
-        // Eliminar del disco duro
         if (await fs.pathExists(documento.fileUrl)) {
             await fs.unlink(documento.fileUrl);
         }
 
-        // Eliminar de MongoDB
         await UserDocument.findByIdAndDelete(id);
 
         res.json({ msg: "Documento eliminado con éxito" });
