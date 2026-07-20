@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
+const helmet = require("helmet");
+
 const app = express();
+
 const PORT = process.env.PORT || 5100;
 const connectDB = require('./src/config/database');
 const expedientesRoutes = require('./src/routes/expedientes');
@@ -9,6 +12,7 @@ const appTokenMiddleware = require('./src/middlewares/appToken');
 
 connectDB();
 
+app.use(helmet());
 app.use(express.json());
 app.use(appTokenMiddleware);
 app.use('/api',expedientesRoutes);
