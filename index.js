@@ -20,3 +20,5 @@ app.use('/api/usuarios',usuariosRoutes);
 app.listen(PORT, () =>{
     console.log(`Hello world: http://localhost:${PORT}`);
 });
+
+module.exports = app;
